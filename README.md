@@ -54,8 +54,7 @@ Instead of manually sorting vendors by heuristics (e.g., lowest price or closest
    The trained model is wrapped in a **FastAPI** endpoint:
    ```bash
    POST /rank-msps
-````
-
+---
 It accepts a job and a list of MSP candidates, scores each one, and returns them sorted by predicted relevance.
 
 ---
@@ -170,10 +169,3 @@ ML Engineer | AI Systems Developer
 ## 🪄 License
 
 MIT License © 2025 Krish Batra
-
-```
-
----
-
-Would you like me to now generate the **`requirements.txt`** for this project too (so your GitHub repo installs perfectly when cloned)?
-```
