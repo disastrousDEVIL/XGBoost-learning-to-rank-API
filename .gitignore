@@ -5,3 +5,5 @@ models/
 .venv/
 venv/
 .env
+logs/
+*.log

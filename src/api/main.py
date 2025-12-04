@@ -1,9 +1,10 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import joblib
 import pandas as pd
 import xgboost as xgb
 import logging
+import os
 from fastapi.responses import JSONResponse
 from fastapi.requests import Request
 
@@ -11,19 +12,34 @@ from fastapi.requests import Request
 
 model = joblib.load("../../models/xgboost_ranker_model.pkl")
 
-#Define request body schema
+# ------------------------------------------------
+# Define request schemas with validation
+# ------------------------------------------------
+class MSPCandidate(BaseModel):
+    msp_id: int
+    distance_km: float = Field(..., ge=0, description="Distance to customer in km")
+    price_quote: float = Field(..., gt=0, description="Quoted price for the move")
+    past_accept_rate: float = Field(..., ge=0, le=1, description="MSP's past acceptance rate (0-1)")
+    completion_rate: float = Field(..., ge=0, le=1, description="MSP's past completion rate (0-1)")
+    rating: float = Field(..., ge=0, le=5, description="Average customer rating (0-5)")
 
 class MSPRequest(BaseModel):
     job_id: int
-    candidates: list[dict] #Each MSP's features
+    candidates: list[MSPCandidate]
 
 app=FastAPI(title="MSP Ranking API",description="Rank MSPs for a given job")
 
 # ------------------------------------------------
 # Configure logging
 # ------------------------------------------------
+# Ensure logs directory exists (relative to this script's location)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+logs_dir = os.path.join(script_dir, "logs")
+os.makedirs(logs_dir, exist_ok=True)
+
+log_file_path = os.path.join(logs_dir, "api.log")
 logging.basicConfig(
-    filename="logs/api.log",
+    filename=log_file_path,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
@@ -43,16 +59,17 @@ async def global_exception_handler(request: Request, exc: Exception):
 # ------------------------------------------------
 
 @app.post("/rank-msps")
-def rank_msp(request:MSPRequest):
+def rank_msp(request: MSPRequest):
     try:
-        df=pd.DataFrame(request.candidates)
-        features=["distance_km","price_quote","past_accept_rate","completion_rate","rating"]
+        df = pd.DataFrame([c.dict() for c in request.candidates])
+        features = ["distance_km", "price_quote", "past_accept_rate", "completion_rate", "rating"]
 
         df["score"] = model.predict(df[features])
+        ranked = df.sort_values("score", ascending=False).to_dict(orient="records")
 
-        ranked=df.sort_values('score',ascending=False).to_dict(orient='records')
-        return {"job_id":request.job_id,"ranked_candidates":ranked}
+        logging.info(f"Successfully ranked {len(df)} MSPs for job {request.job_id}")
+        return {"job_id": request.job_id, "ranked_candidates": ranked}
+
     except Exception as e:
-        logging.error(f"Error while ranking MSPs: {e}")
+        logging.error(f"Ranking failed for job {request.job_id}: {e}")
         raise
-    
