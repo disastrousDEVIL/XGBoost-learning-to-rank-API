@@ -7,6 +7,8 @@ import logging
 import os
 from fastapi.responses import JSONResponse
 from fastapi.requests import Request
+from time import time
+
 
 #load trained model
 
@@ -53,6 +55,23 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"error": str(exc), "message": "Internal server error while ranking MSPs."},
     )
+
+# ------------------------------------------------
+# Middleware for logging requests and responses
+# ------------------------------------------------
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time=time()
+    try:
+        logging.info(f"Incoming request: {request.method} {request.url.path}")
+        response=await call_next(request)
+        duration=round(time()-start_time,3)
+        logging.info(f"Completed {request.method} {request.url.path} in {duration}s with status {response.status_code}")
+        return response
+    except Exception as e:
+        duration = round(time() - start_time, 3)
+        logging.error(f"Request {request.method} {request.url.path} failed in {duration}s: {e}")
+        raise
 
 # ------------------------------------------------
 # Inference endpoint
