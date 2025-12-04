@@ -45,16 +45,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
-# ------------------------------------------------
-# Global exception handler
-# ------------------------------------------------
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Error while processing {request.url.path}: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"error": str(exc), "message": "Internal server error while ranking MSPs."},
-    )
 
 # ------------------------------------------------
 # Middleware for logging requests and responses
@@ -72,6 +62,17 @@ async def log_requests(request: Request, call_next):
         duration = round(time() - start_time, 3)
         logging.error(f"Request {request.method} {request.url.path} failed in {duration}s: {e}")
         raise
+    
+# ------------------------------------------------
+# Global exception handler
+# ------------------------------------------------
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Error while processing {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "message": "Internal server error while ranking MSPs."},
+    )
 
 # ------------------------------------------------
 # Inference endpoint
