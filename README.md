@@ -160,10 +160,12 @@ http://127.0.0.1:8000/docs
 ---
 
 ## 🧩 Author
+Krish Batra
 
-**Krish Batra**  
-ML Engineer | AI Systems Developer  
+Agentic AI | Machine Learning | AI Automation
+
 🌐 [My Digital Home](https://www.vybecode.in/)
+
 ---
 
 ## 🪄 License
